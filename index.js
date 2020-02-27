@@ -15,6 +15,33 @@ async function fetchImage(url, callback, headers) {
   callback(blob);
 }
 
+L._TileLayerWithHeaders = L.TileLayer.extend({
+  initialize: function (url, options, headers) {
+    L.TileLayer.prototype.initialize.call(this, url, options);
+    this.headers = headers;
+  },
+  createTile(coords, done) {
+    const url = this.getTileUrl(coords);
+    const img = document.createElement("img");
+    img.setAttribute("role", "presentation");
+
+    fetchImage(
+        url,
+        resp => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            img.src = reader.result;
+          };
+          reader.readAsDataURL(resp);
+          done(null, img);
+        },
+        this.headers
+    );
+    return img;
+  }
+});
+
+
 L.TileLayer.WMSHeader = L.TileLayer.WMS.extend({
   initialize: function (url, options, headers) {
     L.TileLayer.WMS.prototype.initialize.call(this, url, options);
@@ -26,23 +53,23 @@ L.TileLayer.WMSHeader = L.TileLayer.WMS.extend({
     img.setAttribute("role", "presentation");
 
     fetchImage(
-      url,
-      resp => {
-        const reader = new FileReader();
-        reader.onload = () => {
-          img.src = reader.result;
-        };
-        reader.readAsDataURL(resp);
-        if (resp.type !== 'image/png'){
-          this.fire('tileerror', {
-            error: 'error loading tile',
-            tile: null,
-            coords: coords
-          });
-        }
-        done(null, img);
-      },
-      this.headers
+        url,
+        resp => {
+          const reader = new FileReader();
+          reader.onload = () => {
+            img.src = reader.result;
+          };
+          reader.readAsDataURL(resp);
+          if (resp.type !== 'image/png'){
+            this.fire('tileerror', {
+              error: 'error loading tile',
+              tile: null,
+              coords: coords
+            });
+          }
+          done(null, img);
+        },
+        this.headers
     );
     return img;
   }
@@ -50,4 +77,9 @@ L.TileLayer.WMSHeader = L.TileLayer.WMS.extend({
 
 L.TileLayer.wmsHeader = function (url, options, headers, abort) {
   return new L.TileLayer.WMSHeader(url, options, headers, abort);
+};
+
+
+L.TileLayerWithHeaders = function (url, options, headers, abort) {
+  return new L._TileLayerWithHeaders(url, options, headers, abort);
 };
