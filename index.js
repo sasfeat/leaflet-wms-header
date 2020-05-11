@@ -33,6 +33,13 @@ L._TileLayerWithHeaders = L.TileLayer.extend({
             img.src = reader.result;
           };
           reader.readAsDataURL(resp);
+          if (resp.type !== 'image/png'){
+            this.fire('tileerror', {
+              error: 'error loading tile',
+              tile: null,
+              coords: coords
+            });
+          }
           done(null, img);
         },
         this.headers
